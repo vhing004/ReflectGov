@@ -14,9 +14,11 @@ import {
   Lock,
   ShieldAlert,
   ArrowLeft,
+  CheckCircle2,
 } from 'lucide-react';
 import { Department, User, UserRole } from '../../types';
 import { masterDataApi } from '../../services/api';
+import { ConfirmModal } from '../common/ConfirmModal';
 
 export const UserManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -31,6 +33,10 @@ export const UserManagementPage: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+
+  // Toggle Confirm Modal State
+  const [confirmUser, setConfirmUser] = useState<User | null>(null);
 
   const fetchUsers = async () => {
     if (!isAdmin) return;
@@ -56,16 +62,22 @@ export const UserManagementPage: React.FC = () => {
     fetchUsers();
   }, [selectedDept, selectedRole, isAdmin]);
 
-  const handleToggleActive = async (userId: string) => {
-    if (!isAdmin) return;
+  const handleConfirmToggleActive = async () => {
+    if (!confirmUser) return;
     try {
-      await masterDataApi.toggleUserActive(userId);
+      await masterDataApi.toggleUserActive(confirmUser.id);
       setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, isActive: !u.isActive } : u))
+        prev.map((u) => (u.id === confirmUser.id ? { ...u, isActive: !u.isActive } : u))
       );
+      setActionSuccessMsg(
+        `Đã ${confirmUser.isActive ? 'tạm khóa' : 'mở khóa kích hoạt'} tài khoản [${confirmUser.fullName}] thành công!`
+      );
+      setTimeout(() => setActionSuccessMsg(null), 4000);
     } catch (err) {
       console.error('Failed to toggle user status', err);
       alert('Không thể thay đổi trạng thái tài khoản.');
+    } finally {
+      setConfirmUser(null);
     }
   };
 
@@ -112,6 +124,13 @@ export const UserManagementPage: React.FC = () => {
           Danh sách cán bộ điều phối, cán bộ hiện trường và phân quyền truy cập hệ thống.
         </p>
       </div>
+
+      {actionSuccessMsg && (
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-200 shadow-sm">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{actionSuccessMsg}</span>
+        </div>
+      )}
 
       {/* Filters Bar */}
       <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-sm border border-slate-200 flex flex-wrap items-center gap-3">
@@ -233,7 +252,7 @@ export const UserManagementPage: React.FC = () => {
                   </td>
                   <td className="py-3.5 px-4 text-right">
                     <button
-                      onClick={() => handleToggleActive(u.id)}
+                      onClick={() => setConfirmUser(u)}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                         u.isActive
                           ? 'bg-rose-50 text-rose-700 hover:bg-rose-100'
@@ -249,6 +268,23 @@ export const UserManagementPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Account Toggle Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!confirmUser}
+        title={confirmUser?.isActive ? 'Xác Nhận Tạm Khóa Tài Khoản' : 'Xác Nhận Mở Khóa Tài Khoản'}
+        message={
+          confirmUser?.isActive
+            ? `Bạn có chắc chắn muốn tạm khóa tài khoản của cán bộ [${confirmUser?.fullName}] (@${confirmUser?.username}) không? Cán bộ này sẽ tạm thời không thể đăng nhập vào hệ thống.`
+            : `Bạn có chắc chắn muốn mở khóa kích hoạt lại tài khoản của cán bộ [${confirmUser?.fullName}] (@${confirmUser?.username}) không?`
+        }
+        confirmText={confirmUser?.isActive ? 'Khóa tài khoản' : 'Mở khóa'}
+        cancelText="Hủy bỏ"
+        variant={confirmUser?.isActive ? 'danger' : 'primary'}
+        icon={confirmUser?.isActive ? 'warning' : 'question'}
+        onConfirm={handleConfirmToggleActive}
+        onCancel={() => setConfirmUser(null)}
+      />
     </div>
   );
 };
