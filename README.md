@@ -3,8 +3,8 @@
 [![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![React 19](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18.0-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Entity Framework Core](https://img.shields.io/badge/EF_Core-SQLite-blue?logo=sqlite&logoColor=white)](https://learn.microsoft.com/en-us/ef/core/)
 [![Architecture](https://img.shields.io/badge/Architecture-Clean_Architecture-orange)](#-kiến-trúc-hệ-thống)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -21,7 +21,7 @@ Hệ thống kết nối trực tiếp **Người Dân** với **Trung Tâm Ti�
 - [🏛️ Kiến Trúc Hệ Thống (Clean Architecture)](#️-kiến-trúc-hệ-thống-clean-architecture)
 - [🛠️ Công Nghệ Sử Dụng (Tech Stack)](#️-công-nghệ-sử-dụng-tech-stack)
 - [📂 Cấu Trúc Thư Mục Dự Án](#-cấu-trúc-thư-mục-dự-án)
-- [🚀 Hướng Dẫn Cài Đặt & Khởi Chạy](#-hướng-dẫn-cài-đặt--khởi-chạy)
+- [🚀 Hướng Dẫn Khởi Chạy Ứng Dụng](#-hướng-dẫn-khởi-chạy-ứng-dụng)
 - [🔑 Danh Sách Tài Khoản & Mật Khẩu Thử Nghiệm](#-danh-sách-tài-khoản--mật-khẩu-thử-nghiệm)
 - [📡 Danh Mục RESTful API](#-danh-mục-restful-api)
 - [🗺️ Lộ Trình Phát Triển Tương Lai (Roadmap)](#️-lộ-trình-phát-triển-tương-lai-roadmap)
@@ -95,7 +95,7 @@ Hệ thống được tổ chức theo chuẩn **Clean Architecture 4 tầng** n
 ReflectGov/
 ├── backend/
 │   ├── ReflectGov.Domain/          # Tầng 1: Core Domain Entities, Enums, Constants
-│   ├── ReflectGov.Infrastructure/  # Tầng 2: EF Core DbContext, SQLite, Storage, Notifications
+│   ├── ReflectGov.Infrastructure/  # Tầng 2: EF Core DbContext, Npgsql PostgreSQL, Storage
 │   ├── ReflectGov.Application/     # Tầng 3: Business Services, DTOs, Mapping, Validators
 │   └── ReflectGov.Api/             # Tầng 4: RESTful Web API Controllers, Middleware, Auth
 └── frontend/                       # Tầng Giao diện: React 19, TypeScript, Vite, Tailwind CSS
@@ -108,7 +108,8 @@ ReflectGov/
 | Thành Phần | Công Nghệ / Thư Viện | Mục Đích Sử Dụng |
 | :--- | :--- | :--- |
 | **Backend Runtime** | **.NET 9 Web API (C# 13)** | Xây dựng RESTful Services hiệu năng cao |
-| **Database** | **Entity Framework Core 9 + SQLite** | ORM quản trị dữ liệu quan hệ, Seed data tự động |
+| **Database Engine** | **PostgreSQL 18.x** | Cơ sở dữ liệu quan hệ lưu trữ tập trung `reflectgov_db` |
+| **ORM / Data Access** | **Npgsql.EntityFrameworkCore.PostgreSQL** | ORM quản trị dữ liệu, Migration & Seeding tự động |
 | **Security** | **JWT Bearer + BCrypt.Net** | Xác thực phân quyền Role-based, mã hóa mật khẩu |
 | **Frontend Framework** | **React 19 + TypeScript** | Xây dựng giao diện Single Page Application (SPA) |
 | **Build Tool & Bundler**| **Vite 8** | Hot Module Replacement (HMR) và tối ưu hóa đóng gói |
@@ -124,11 +125,12 @@ ReflectGov/
 
 ```text
 d:/ReflectGov/
+├── run_app.bat                         # Script khởi chạy tự động 1 cú nhấp chuột cho Windows
 ├── backend/
 │   ├── ReflectGov.Domain/              # Thực thể Domain (Feedback, User, Category...)
-│   ├── ReflectGov.Infrastructure/      # Cấu hình EF Core, DbInitializer, FileStorage
+│   ├── ReflectGov.Infrastructure/      # Cấu hình EF Core Npgsql, DbInitializer, FileStorage
 │   ├── ReflectGov.Application/         # DTOs, FeedbackService, StatsService, AuthService
-│   └── ReflectGov.Api/                 # 7 Controllers, Program.cs, launchSettings
+│   └── ReflectGov.Api/                 # 7 Controllers, Program.cs, appsettings.json
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
@@ -145,35 +147,35 @@ d:/ReflectGov/
 
 ---
 
-## 🚀 Hướng Dẫn Cài Đặt & Khởi Chạy
+## 🚀 Hướng Dẫn Khởi Chạy Ứng Dụng
 
-### 1. Yêu Cầu Môi Trường
-* **.NET 9.0 SDK**: [Tải tại dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/9.0)
-* **Node.js 20+ & npm**: [Tải tại nodejs.org](https://nodejs.org/)
-* **Git**: [Tải tại git-scm.com](https://git-scm.com/)
+### ⚡ Cách 1: Khởi chạy nhanh 1 cú nhấp chuột (Khuyên dùng)
+1. Mở thư mục dự án `d:\ReflectGov`.
+2. **Nhấp đúp chuột vào file [`run_app.bat`](file:///d:/ReflectGov/run_app.bat)**.
+3. Hệ thống sẽ tự động bật 2 cửa sổ terminal khởi chạy song song cả **Backend .NET 9 (kết nối PostgreSQL)** và **Frontend React Vite**.
 
 ---
 
-### 2. Khởi Chạy Backend API (.NET 9)
+### 💻 Cách 2: Khởi chạy thủ công bằng Terminal
+
+#### 1. Khởi chạy Backend API (.NET 9 + PostgreSQL)
 ```bash
-# 1. Di chuyển vào thư mục backend API
+# 1. Di chuyển vào thư mục backend
 cd backend/ReflectGov.Api
 
-# 2. Khởi chạy Web API (Tự động tạo Database SQLite & nạp Seed data)
+# 2. Khởi chạy Web API
 dotnet run --launch-profile http
 
 # API Backend chạy tại: http://localhost:5000
 # Swagger API Docs:    http://localhost:5000/swagger
 ```
 
----
-
-### 3. Khởi Chạy Frontend (React 19 + Vite)
+#### 2. Khởi chạy Frontend Web (React 19 + Vite)
 ```bash
 # 1. Di chuyển vào thư mục frontend
 cd frontend
 
-# 2. Cài đặt các gói phụ thuộc
+# 2. Cài đặt các gói phụ thuộc (chỉ cần chạy lần đầu)
 npm install
 
 # 3. Chạy môi trường phát triển
@@ -232,9 +234,10 @@ npm run dev
 - [x] **Giai đoạn 3**: Trung tâm điều hành IOC, Kanban Board 3 cột, Biểu đồ thống kê Recharts.
 - [x] **Giai đoạn 4**: Phân quyền RBAC 4 vai trò, Ràng buộc quy trình tuần tự nghiêm ngặt.
 - [x] **Giai đoạn 5**: Phân tách Cổng đăng nhập riêng biệt với Mã định danh công vụ PIN.
-- [ ] **Giai đoạn 6 (Kế tiếp)**: Tích hợp **AI Image Classification** tự động nhận diện ổ gà / rác thải để gợi ý phân loại lĩnh vực tức thì.
-- [ ] **Giai đoạn 7**: Tích hợp Zalo Mini App và Cổng gửi tin nhắn SMS Brandname thông báo tiến độ cho người dân.
-- [ ] **Giai đoạn 8**: Bản đồ nhiệt GIS Heatmap phân tích điểm nóng hạ tầng đô thị phục vụ quy hoạch thành phố.
+- [x] **Giai đoạn 6**: Chuyển đổi và vận hành toàn diện trên **PostgreSQL 18 (Npgsql)**.
+- [ ] **Giai đoạn 7 (Kế tiếp)**: Tích hợp **AI Image Classification** tự động nhận diện ổ gà / rác thải để gợi ý phân loại lĩnh vực tức thì.
+- [ ] **Giai đoạn 8**: Tích hợp Zalo Mini App và Cổng gửi tin nhắn SMS Brandname thông báo tiến độ cho người dân.
+- [ ] **Giai đoạn 9**: Bản đồ nhiệt GIS Heatmap phân tích điểm nóng hạ tầng đô thị phục vụ quy hoạch thành phố.
 
 ---
 
