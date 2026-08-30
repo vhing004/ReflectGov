@@ -1,0 +1,6 @@
+@ReflectGov.Api_HostAddress = http://localhost:5170
+
+GET {{ReflectGov.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
