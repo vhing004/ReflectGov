@@ -136,6 +136,8 @@ export interface AuthResponse {
   fullName: string;
   role: UserRole;
   userId: string;
+  email?: string;
+  phoneNumber?: string;
   departmentId?: string;
   departmentName?: string;
   expiresAt: string;

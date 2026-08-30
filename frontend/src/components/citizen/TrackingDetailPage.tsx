@@ -21,8 +21,10 @@ import { feedbackApi } from '../../services/api';
 import { StatusBadge } from '../common/StatusBadge';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { StarRating } from '../common/StarRating';
+import { useAuth } from '../../context/AuthContext';
 
 export const TrackingDetailPage: React.FC = () => {
+  const { user, isAdminOrStaff } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [queryCode, setQueryCode] = useState(searchParams.get('code') || '');
   const [feedback, setFeedback] = useState<FeedbackDetail | null>(null);
@@ -428,55 +430,83 @@ export const TrackingDetailPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Star className="w-6 h-6 text-amber-500 fill-amber-500" />
                 <h3 className="font-extrabold text-lg text-slate-900">
-                  Đánh Giá Mức Độ Hài Lòng
+                  Đánh Giá Mức Độ Hài Lòng Của Người Dân
                 </h3>
               </div>
-              <p className="text-xs sm:text-sm text-slate-600">
-                Ý kiến đánh giá của bạn là cơ sở quan trọng để cải thiện chất lượng phục vụ công đô thị.
-              </p>
 
-              {ratingSuccess && (
-                <div className="p-3 bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  Cảm ơn bạn đã gửi đánh giá!
+              {isAdminOrStaff ? (
+                /* Officer View: Read-only display */
+                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-slate-800">
+                    <span>Điểm đánh giá hiện tại từ công dân:</span>
+                    {feedback.rating ? (
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 font-extrabold text-xs">
+                        {feedback.rating.score} / 5 ⭐
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 italic font-normal">Chưa có đánh giá</span>
+                    )}
+                  </div>
+                  {feedback.rating?.comment && (
+                    <p className="italic text-slate-700">
+                      "{feedback.rating.comment}"
+                    </p>
+                  )}
+                  <p className="text-[11px] text-amber-800/80 pt-1 border-t border-amber-200/60">
+                    ℹ️ <strong>Lưu ý nghiệp vụ:</strong> Cán bộ công vụ không được phép tự chấm điểm đánh giá hồ sơ.
+                  </p>
                 </div>
+              ) : (
+                /* Citizen Interactive Rating Form */
+                <>
+                  <p className="text-xs sm:text-sm text-slate-600">
+                    Ý kiến đánh giá của bạn là cơ sở quan trọng để cải thiện chất lượng phục vụ công đô thị.
+                  </p>
+
+                  {ratingSuccess && (
+                    <div className="p-3 bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      Cảm ơn bạn đã gửi đánh giá!
+                    </div>
+                  )}
+
+                  <form onSubmit={handleRateSubmit} className="space-y-4 pt-2">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-2">
+                        Mức độ hài lòng của bạn:
+                      </label>
+                      <StarRating
+                        score={userRating}
+                        readOnly={false}
+                        size="lg"
+                        onChange={(newScore) => setUserRating(newScore)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Ý kiến đóng góp thêm (tùy chọn)
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="Nhập nhận xét về tốc độ xử lý, thái độ cán bộ..."
+                        value={userComment}
+                        onChange={(e) => setUserComment(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm outline-none focus:border-gov-600 bg-white"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmittingRating}
+                      className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      <Send className="w-4 h-4" />
+                      <span>{feedback.rating ? 'Cập nhật đánh giá' : 'Gửi đánh giá'}</span>
+                    </button>
+                  </form>
+                </>
               )}
-
-              <form onSubmit={handleRateSubmit} className="space-y-4 pt-2">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">
-                    Mức độ hài lòng của bạn:
-                  </label>
-                  <StarRating
-                    score={userRating}
-                    readOnly={false}
-                    size="lg"
-                    onChange={(newScore) => setUserRating(newScore)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Ý kiến đóng góp thêm (tùy chọn)
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Nhập nhận xét về tốc độ xử lý, thái độ cán bộ..."
-                    value={userComment}
-                    onChange={(e) => setUserComment(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm outline-none focus:border-gov-600 bg-white"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmittingRating}
-                  className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>{feedback.rating ? 'Cập nhật đánh giá' : 'Gửi đánh giá'}</span>
-                </button>
-              </form>
             </div>
           )}
         </div>

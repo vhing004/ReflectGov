@@ -15,12 +15,14 @@ import {
   Loader2,
   Sparkles,
   Compass,
+  ShieldAlert,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Category, FeedbackDetail } from '../../types';
 import { feedbackApi, masterDataApi } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 // Create a modern SVG pin icon for Leaflet marker (100% reliable)
 const createGovMarkerIcon = (color: string = '#1b4d89') => {
@@ -159,6 +161,7 @@ const MapController: React.FC<{
 export const SubmitFeedbackPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user, isAdminOrStaff, logout } = useAuth();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
@@ -168,9 +171,9 @@ export const SubmitFeedbackPage: React.FC = () => {
   const [coordinates, setCoordinates] = useState<[number, number]>([20.9984, 105.8123]); // Default Hanoi
   const [isGeocoding, setIsGeocoding] = useState(false);
 
-  const [citizenName, setCitizenName] = useState('');
-  const [citizenPhone, setCitizenPhone] = useState('');
-  const [citizenEmail, setCitizenEmail] = useState('');
+  const [citizenName, setCitizenName] = useState(user?.fullName || '');
+  const [citizenPhone, setCitizenPhone] = useState(user?.phoneNumber || '');
+  const [citizenEmail, setCitizenEmail] = useState(user?.email || '');
 
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -178,6 +181,15 @@ export const SubmitFeedbackPage: React.FC = () => {
   const [successData, setSuccessData] = useState<FeedbackDetail | null>(null);
   const [copied, setCopied] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+
+  // Sync user info if logged in as citizen
+  useEffect(() => {
+    if (user && !isAdminOrStaff) {
+      if (user.fullName) setCitizenName(user.fullName);
+      if (user.phoneNumber) setCitizenPhone(user.phoneNumber);
+      if (user.email) setCitizenEmail(user.email);
+    }
+  }, [user, isAdminOrStaff]);
 
   useEffect(() => {
     const fetchCats = async () => {
@@ -305,6 +317,49 @@ export const SubmitFeedbackPage: React.FC = () => {
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  // If logged in as Officer/Staff/Admin, prevent submitting citizen feedback
+  if (isAdminOrStaff) {
+    return (
+      <div className="container mx-auto max-w-2xl px-4 py-16 text-center">
+        <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-xl border border-amber-200 space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-inner">
+            <ShieldAlert className="w-10 h-10" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+              Tài Khoản Cán Bộ Đang Thi Hành Công Vụ
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
+              Bạn đang đăng nhập với tư cách là cán bộ <strong className="text-gov-800">{user?.fullName}</strong> (Vai trò: <span className="font-bold text-amber-600">{user?.role}</span>).
+            </p>
+            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 font-medium max-w-lg mx-auto text-left space-y-1">
+              <p className="font-bold">⚠️ Quy định phân quyền nghiệp vụ:</p>
+              <p>Tài khoản Cán bộ công vụ không thực hiện gửi phản ánh kiến nghị công dân trên Cổng dịch vụ công trực tuyến. Vui lòng chuyển về Bàn làm việc để xử lý hồ sơ hoặc Đăng xuất nếu muốn gửi với tư cách công dân.</p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => navigate('/admin')}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#1b4d89] hover:bg-[#2762bf] text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Compass className="w-4 h-4 text-amber-400" />
+              <span>Vào Bàn Làm Việc Cán Bộ</span>
+            </button>
+            <button
+              onClick={() => {
+                logout();
+                navigate('/login');
+              }}
+              className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>Đăng xuất tài khoản</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">

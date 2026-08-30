@@ -140,7 +140,7 @@ export const AdminLayout: React.FC = () => {
               </div>
               <div className="h-6 w-px bg-slate-200" />
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#1b4d89] text-white flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-full bg-[#1b4d89] text-white flex items-center justify-center font-bold text-xs shadow">
                   {user?.fullName?.charAt(0) || 'U'}
                 </div>
                 <div className="hidden sm:block text-left">
@@ -152,6 +152,16 @@ export const AdminLayout: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Prominent Topbar Logout Button */}
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all shadow-sm cursor-pointer ml-1"
+                title="Đăng xuất khỏi phiên làm việc"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Đăng xuất</span>
+              </button>
             </div>
           </header>
 

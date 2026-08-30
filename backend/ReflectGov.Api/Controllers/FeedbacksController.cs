@@ -24,6 +24,7 @@ public class FeedbacksController : ControllerBase
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(FeedbackDetailDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> SubmitFeedback([FromForm] CreateFeedbackRequest request)
     {
         if (!ModelState.IsValid)
@@ -32,6 +33,15 @@ public class FeedbacksController : ControllerBase
         Guid? citizenUserId = null;
         if (User.Identity?.IsAuthenticated == true)
         {
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            if (userRole is "Admin" or "Dispatcher" or "Officer")
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    message = "Tài khoản Cán bộ đang thi hành công vụ không được gửi phản ánh công dân trên Cổng dịch vụ công. Vui lòng chuyển sang Bàn làm việc Cán bộ (/admin) hoặc đăng xuất."
+                });
+            }
+
             var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (Guid.TryParse(idClaim, out var parsedId))
             {
@@ -104,9 +114,22 @@ public class FeedbacksController : ControllerBase
     [HttpPost("{id:guid}/rate")]
     [ProducesResponseType(typeof(FeedbackRatingDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RateFeedback(Guid id, [FromBody] RateFeedbackRequest request)
     {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            if (userRole is "Admin" or "Dispatcher" or "Officer")
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    message = "Cán bộ công vụ không được phép tự đánh giá chất lượng hồ sơ xử lý. Quyền đánh giá thuộc về người dân phản ánh."
+                });
+            }
+        }
+
         if (request.Score < 1 || request.Score > 5)
             return BadRequest(new { message = "Điểm đánh giá phải từ 1 đến 5 sao." });
 
