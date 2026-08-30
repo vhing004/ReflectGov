@@ -33,18 +33,20 @@ Hệ thống kết nối trực tiếp **Người Dân** với **Trung Tâm Ti�
 ### 1. Cổng Dịch Vụ Công Người Dân (`/`)
 * **Gửi phản ánh trực quan 30 giây (`/submit`)**: Chụp/tải ảnh hiện trường, bản đồ số **CartoDB Voyager CDN** mượt mà, tự động bóc tách số nhà ngõ ngách, tên đường, phường/xã (**Photon Reverse Geocoding**).
 * **Tra cứu tiến độ thời gian thực (`/track`)**: Stepper 4 bước trực quan, nhật ký thi công hiện trường, đối chiếu ảnh **Trước / Sau xử lý**.
-* **Đánh giá mức độ hài lòng 1-5 sao**: Người dân trực tiếp chấm điểm chất lượng và gửi góp ý sau khi công trình hoàn thành.
+* **Đánh giá mức độ hài lòng 1-5 sao**: Người dân (kể cả chưa đăng nhập) có thể chấm điểm sao và nhận xét minh bạch. Dữ liệu đánh giá được hệ thống liên kết trực tiếp vào **Điểm KPI của Cán bộ thụ lý** và **Chỉ số chất lượng của Phòng ban**.
 * **Bản đồ GIS phản ánh số (`/map`)**: Bản đồ nhiệt toàn thành phố, lọc theo 6 chuyên ngành đô thị (Giao thông, Môi trường, Trật tự đô thị, Chiếu sáng, Cây xanh, An ninh).
 
 ### 2. Trung Tâm Điều Hành IOC & Bàn Làm Việc Cán Bộ (`/admin`)
 * **Bảng điều khiển KPI & SLA Alerts**: 4 chỉ số KPI tổng thể, biểu đồ phân bổ chuyên ngành, biểu đồ cột khối lượng tiếp nhận/giải quyết 4 tuần gần nhất và danh sách cảnh báo hồ sơ quá hạn/sắp đến hạn.
 * **Quản lý Kanban Board 3 cột**: Kéo thả và theo dõi theo 3 trạng thái nghiệp vụ (*Chờ tiếp nhận*, *Đang xử lý*, *Hoàn thành*) hoặc chuyển đổi sang **Table View** đa bộ lọc.
 * **Modal 5 nghiệp vụ cán bộ chuyên sâu**: Thẩm tra (`Verify`), Phân công đơn vị & SLA (`Assign`), Cập nhật tiến độ hiện trường (`Progress`), Báo cáo hoàn thành nộp ảnh nghiệm thu (`Resolve`), Lãnh đạo phê duyệt công khai (`Approve`).
-* **Quản trị người dùng & Phân quyền cán bộ (`/admin/users`)**: Thêm mới, phân bổ đơn vị công tác và khóa/mở khóa tài khoản cán bộ.
+* **Quản trị người dùng & Phân quyền cán bộ (`/admin/users`)**: Thêm mới, phân bổ đơn vị công tác và khóa/mở khóa tài khoản cán bộ kèm hộp thoại xác nhận.
 
-### 3. Cổng Đăng Nhập Riêng Biệt & Bảo Mật 2 Lớp
-* **Cổng Công Dân (`/login`)**: Giao diện thuần túy cho người dân đăng nhập/đăng ký, tuyệt đối không để lộ thông tin cơ quan nhà nước.
-* **Cổng Cán Bộ Nội Bộ (`/admin/login` / `/gov-portal`)**: Giao diện Executive Dark IOC, yêu cầu **Mã Định Danh Bảo Mật Công Vụ (Gov PIN: `GOV-2026`)** mới mở khóa danh sách bộ phận điều hành.
+### 3. Phân Quyền Nghiêm Ngặt & Ranh Giới Nghiệp Vụ Chuyên Nghiệp
+* **Phân tách Cổng Công Dân (`/login`) và Cổng Cán Bộ (`/admin/login`)**: Yêu cầu **Mã Định Danh Bảo Mật Công Vụ (Gov PIN: `GOV-2026`)** mới mở khóa danh sách bộ phận điều hành.
+* **Chặn Cán bộ gửi phản ánh công dân**: Tài khoản Cán bộ thi hành công vụ không được gửi phản ánh trên Cổng dân nhằm chống tạo hồ sơ ảo (chặn cả giao diện và Backend 403).
+* **Chặn Cán bộ tự chấm điểm sao**: Cán bộ không được tự đánh giá hồ sơ mình hoặc đồng nghiệp xử lý; quyền chấm điểm sao thuộc về công dân phản ánh.
+* **Hộp thoại xác nhận (Confirm Dialogs)**: Mọi thao tác Đăng xuất hoặc Khóa tài khoản đều có hộp thoại xác nhận để tránh bấm nhầm.
 
 ---
 
@@ -52,7 +54,7 @@ Hệ thống kết nối trực tiếp **Người Dân** với **Trung Tâm Ti�
 
 | Nghiệp Vụ & Quyền Hạn | 🧑‍💼 Công Dân (`Citizen`) | 📋 Cán Bộ Một Cửa (`Dispatcher`) | 🚗 Cán Bộ Hiện Trường (`Officer`) | 👑 Lãnh Đạo / Admin (`Admin`) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Gửi phản ánh, tra cứu & đánh giá 5 sao** | ✅ Cho phép | ❌ Không | ❌ Không | ❌ Không |
+| **Gửi phản ánh, tra cứu & đánh giá 5 sao** | ✅ Cho phép | ❌ Bị chặn (403) | ❌ Bị chặn (403) | ❌ Bị chặn (403) |
 | **Xem Dashboard KPI & Cảnh báo SLA** | ❌ 403 Forbidden | ✅ Cho phép | ✅ Cho phép (theo phòng ban) | ✅ Toàn quyền |
 | **Thẩm tra hồ sơ (Hợp lệ / Từ chối)** | ❌ 403 Forbidden | ✅ **Nhiệm vụ chính** | ❌ 403 Forbidden | ✅ Toàn quyền |
 | **Phân công đơn vị, Cán bộ & SLA** | ❌ 403 Forbidden | ✅ **Nhiệm vụ chính** | ❌ 403 Forbidden | ✅ Toàn quyền |
@@ -124,8 +126,7 @@ ReflectGov/
 ## 📂 Cấu Trúc Thư Mục Dự Án
 
 ```text
-d:/ReflectGov/
-├── run_app.bat                         # Script khởi chạy tự động 1 cú nhấp chuột cho Windows
+ReflectGov/
 ├── backend/
 │   ├── ReflectGov.Domain/              # Thực thể Domain (Feedback, User, Category...)
 │   ├── ReflectGov.Infrastructure/      # Cấu hình EF Core Npgsql, DbInitializer, FileStorage
@@ -137,7 +138,7 @@ d:/ReflectGov/
 │   │   │   ├── admin/                  # AdminLayout, Dashboard, Kanban, ActionModal, Users
 │   │   │   ├── citizen/                # HomePage, SubmitFeedback, TrackingDetail, MapPage
 │   │   │   ├── auth/                   # LoginPage (Dân), OfficerLoginPage (Cán bộ)
-│   │   │   └── common/                 # Navbar, Footer, StatusBadge, PriorityBadge, StarRating
+│   │   │   └── common/                 # Navbar, Footer, StatusBadge, PriorityBadge, ConfirmModal
 │   │   ├── context/                    # AuthContext quản lý phiên đăng nhập
 │   │   ├── services/                   # Axios API Client kết nối Backend
 │   │   └── types/                      # TypeScript Interface DTOs
@@ -149,16 +150,7 @@ d:/ReflectGov/
 
 ## 🚀 Hướng Dẫn Khởi Chạy Ứng Dụng
 
-### ⚡ Cách 1: Khởi chạy nhanh 1 cú nhấp chuột (Khuyên dùng)
-1. Mở thư mục dự án `d:\ReflectGov`.
-2. **Nhấp đúp chuột vào file [`run_app.bat`](file:///d:/ReflectGov/run_app.bat)**.
-3. Hệ thống sẽ tự động bật 2 cửa sổ terminal khởi chạy song song cả **Backend .NET 9 (kết nối PostgreSQL)** và **Frontend React Vite**.
-
----
-
-### 💻 Cách 2: Khởi chạy thủ công bằng Terminal
-
-#### 1. Khởi chạy Backend API (.NET 9 + PostgreSQL)
+### 1. Khởi chạy Backend API (.NET 9 + PostgreSQL)
 ```bash
 # 1. Di chuyển vào thư mục backend
 cd backend/ReflectGov.Api
@@ -170,7 +162,9 @@ dotnet run --launch-profile http
 # Swagger API Docs:    http://localhost:5000/swagger
 ```
 
-#### 2. Khởi chạy Frontend Web (React 19 + Vite)
+---
+
+### 2. Khởi chạy Frontend Web (React 19 + Vite)
 ```bash
 # 1. Di chuyển vào thư mục frontend
 cd frontend
@@ -209,7 +203,7 @@ npm run dev
 | `POST` | `/api/auth/login` | Public | Đăng nhập hệ thống (Cấp JWT Token) |
 | `POST` | `/api/auth/register` | Public | Đăng ký tài khoản công dân mới |
 | `GET` | `/api/auth/me` | Logged In | Lấy thông tin tài khoản đang đăng nhập |
-| `POST` | `/api/feedbacks` | Public | Gửi phản ánh hiện trường kèm tệp đính kèm |
+| `POST` | `/api/feedbacks` | Public (Chỉ Công Dân) | Gửi phản ánh hiện trường kèm tệp đính kèm |
 | `GET` | `/api/feedbacks/track/{code}` | Public | Tra cứu chi tiết tiến độ phản ánh theo mã `PA-xxxx` |
 | `POST` | `/api/feedbacks/{id}/rate` | Public / Citizen | Đánh giá chất lượng 1-5 sao và góp ý |
 | `GET` | `/api/feedbacks/public` | Public | Danh sách phản ánh công khai trên bản đồ GIS |
@@ -235,9 +229,10 @@ npm run dev
 - [x] **Giai đoạn 4**: Phân quyền RBAC 4 vai trò, Ràng buộc quy trình tuần tự nghiêm ngặt.
 - [x] **Giai đoạn 5**: Phân tách Cổng đăng nhập riêng biệt với Mã định danh công vụ PIN.
 - [x] **Giai đoạn 6**: Chuyển đổi và vận hành toàn diện trên **PostgreSQL 18 (Npgsql)**.
-- [ ] **Giai đoạn 7 (Kế tiếp)**: Tích hợp **AI Image Classification** tự động nhận diện ổ gà / rác thải để gợi ý phân loại lĩnh vực tức thì.
-- [ ] **Giai đoạn 8**: Tích hợp Zalo Mini App và Cổng gửi tin nhắn SMS Brandname thông báo tiến độ cho người dân.
-- [ ] **Giai đoạn 9**: Bản đồ nhiệt GIS Heatmap phân tích điểm nóng hạ tầng đô thị phục vụ quy hoạch thành phố.
+- [x] **Giai đoạn 7**: Thiết lập ranh giới công vụ chuyên nghiệp (Chặn cán bộ gửi phản ánh công dân & tự chấm điểm sao).
+- [ ] **Giai đoạn 8 (Kế tiếp)**: Tích hợp **AI Image Classification** tự động nhận diện ổ gà / rác thải để gợi ý phân loại lĩnh vực tức thì.
+- [ ] **Giai đoạn 9**: Tích hợp Zalo Mini App và Cổng gửi tin nhắn SMS Brandname thông báo tiến độ cho người dân.
+- [ ] **Giai đoạn 10**: Bản đồ nhiệt GIS Heatmap phân tích điểm nóng hạ tầng đô thị phục vụ quy hoạch thành phố.
 
 ---
 

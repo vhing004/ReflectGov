@@ -27,3 +27,8 @@ yarn-error.log*
 
 # Uploads temporary
 uploads/
+
+# Local Windows launcher scripts (kept locally, not pushed to repo)
+*.bat
+*.cmd
+*.ps1
