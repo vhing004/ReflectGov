@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   ShieldCheck,
+  FolderClock,
 } from "lucide-react";
 import { ConfirmModal } from "./ConfirmModal";
 
@@ -24,9 +25,14 @@ export const Navbar: React.FC = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const isCitizenUser = user && !isAdminOrStaff;
+
   const navLinks = [
     { name: "Trang chủ", path: "/", icon: Home },
     { name: "Gửi phản ánh", path: "/submit", icon: Send },
+    ...(isCitizenUser
+      ? [{ name: "Phản ánh của tôi", path: "/my-feedbacks", icon: FolderClock }]
+      : []),
     { name: "Tra cứu tiến độ", path: "/track", icon: Search },
     { name: "Bản đồ số", path: "/map", icon: MapPin },
   ];
@@ -114,14 +120,18 @@ export const Navbar: React.FC = () => {
             <div className="hidden md:flex items-center gap-3">
               {user ? (
                 <div className="flex items-center gap-3 pl-3 border-l border-white/20">
-                  <div className="text-right">
+                  <Link
+                    to={isCitizenUser ? "/my-feedbacks" : "/admin"}
+                    className="text-right hover:opacity-80 transition-opacity"
+                    title={isCitizenUser ? "Xem phản ánh của tôi" : "Bàn làm việc"}
+                  >
                     <p className="text-xs font-bold text-white leading-tight">
                       {user.fullName}
                     </p>
                     <p className="text-[11px] text-amber-300 font-medium">
-                      {user.role}
+                      {isCitizenUser ? "Công dân • Hồ sơ" : user.role}
                     </p>
-                  </div>
+                  </Link>
                   <button
                     onClick={() => setShowLogoutConfirm(true)}
                     title="Đăng xuất"

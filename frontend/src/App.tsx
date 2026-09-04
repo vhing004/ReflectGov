@@ -6,6 +6,7 @@ import { Footer } from './components/common/Footer';
 import { HomePage } from './components/citizen/HomePage';
 import { SubmitFeedbackPage } from './components/citizen/SubmitFeedbackPage';
 import { TrackingDetailPage } from './components/citizen/TrackingDetailPage';
+import { MyFeedbacksPage } from './components/citizen/MyFeedbacksPage';
 import { MapPage } from './components/citizen/MapPage';
 import { LoginPage } from './components/auth/LoginPage';
 import { OfficerLoginPage } from './components/auth/OfficerLoginPage';
@@ -54,6 +55,7 @@ export const App: React.FC = () => {
           {/* 1. Public Citizen Portal Routes */}
           <Route path="/" element={<CitizenLayout><HomePage /></CitizenLayout>} />
           <Route path="/submit" element={<CitizenLayout><SubmitFeedbackPage /></CitizenLayout>} />
+          <Route path="/my-feedbacks" element={<CitizenLayout><MyFeedbacksPage /></CitizenLayout>} />
           <Route path="/track" element={<CitizenLayout><TrackingDetailPage /></CitizenLayout>} />
           <Route path="/map" element={<CitizenLayout><MapPage /></CitizenLayout>} />
           <Route path="/login" element={<CitizenLayout><LoginPage /></CitizenLayout>} />

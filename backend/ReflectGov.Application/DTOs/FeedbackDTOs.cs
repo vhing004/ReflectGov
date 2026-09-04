@@ -73,6 +73,7 @@ public class FeedbackPublicDto
 public class FeedbackDetailDto : FeedbackPublicDto
 {
     public Guid CategoryId { get; set; }
+    public Guid? CitizenId { get; set; }
     public string CitizenName { get; set; } = string.Empty;
     public string CitizenPhone { get; set; } = string.Empty;
     public string? CitizenEmail { get; set; }
@@ -168,4 +169,5 @@ public class RateFeedbackRequest
 {
     public int Score { get; set; } // 1 - 5
     public string? Comment { get; set; }
+    public string? PhoneVerification { get; set; } // Dành cho khách vãng lai xác thực số điện thoại
 }

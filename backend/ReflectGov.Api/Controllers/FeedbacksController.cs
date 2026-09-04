@@ -65,6 +65,25 @@ public class FeedbacksController : ControllerBase
     }
 
     /// <summary>
+    /// Lấy danh sách phản ánh do chính công dân đã đăng nhập gửi
+    /// </summary>
+    [HttpGet("my-feedbacks")]
+    [Authorize]
+    [ProducesResponseType(typeof(List<FeedbackDetailDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMyFeedbacks()
+    {
+        var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(idClaim, out var citizenUserId))
+        {
+            return Unauthorized(new { message = "Không xác định được danh tính người dùng." });
+        }
+
+        var result = await _feedbackService.GetCitizenFeedbacksAsync(citizenUserId);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Tra cứu tiến độ phản ánh theo mã theo dõi (Hỗ trợ định dạng #RPT-xxxx hoặc PA-yyyy-xxxx)
     /// </summary>
     [HttpGet("track/{trackingCode}")]
@@ -118,15 +137,16 @@ public class FeedbacksController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RateFeedback(Guid id, [FromBody] RateFeedbackRequest request)
     {
+        Guid? actorUserId = null;
+        string? userRole = null;
+
         if (User.Identity?.IsAuthenticated == true)
         {
-            var userRole = User.FindFirstValue(ClaimTypes.Role);
-            if (userRole is "Admin" or "Dispatcher" or "Officer")
+            userRole = User.FindFirstValue(ClaimTypes.Role);
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (Guid.TryParse(idClaim, out var parsedId))
             {
-                return StatusCode(StatusCodes.Status403Forbidden, new
-                {
-                    message = "Cán bộ công vụ không được phép tự đánh giá chất lượng hồ sơ xử lý. Quyền đánh giá thuộc về người dân phản ánh."
-                });
+                actorUserId = parsedId;
             }
         }
 
@@ -135,8 +155,12 @@ public class FeedbacksController : ControllerBase
 
         try
         {
-            var result = await _feedbackService.RateFeedbackAsync(id, request);
+            var result = await _feedbackService.RateFeedbackAsync(id, request, actorUserId, userRole);
             return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
         catch (KeyNotFoundException ex)
         {

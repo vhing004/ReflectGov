@@ -10,9 +10,10 @@ namespace ReflectGov.Application.Services;
 public interface IFeedbackService
 {
     Task<FeedbackDetailDto> SubmitFeedbackAsync(CreateFeedbackRequest request, Guid? citizenUserId = null);
+    Task<List<FeedbackDetailDto>> GetCitizenFeedbacksAsync(Guid citizenUserId);
     Task<FeedbackDetailDto?> TrackByCodeAsync(string trackingCode);
     Task<List<FeedbackPublicDto>> GetPublicFeedbacksAsync(Guid? categoryId = null, string? search = null);
-    Task<FeedbackRatingDto> RateFeedbackAsync(Guid feedbackId, RateFeedbackRequest request);
+    Task<FeedbackRatingDto> RateFeedbackAsync(Guid feedbackId, RateFeedbackRequest request, Guid? actorUserId = null, string? actorRole = null);
     Task<PagedResult<FeedbackDetailDto>> GetFeedbacksPagedAsync(FeedbackFilterRequest filter, UserRole? actorRole = null, Guid? deptId = null);
     Task<FeedbackDetailDto?> GetFeedbackByIdAsync(Guid id);
     Task<FeedbackDetailDto> VerifyFeedbackAsync(Guid id, VerifyFeedbackRequest request, string actorName, string actorRole);
@@ -40,6 +41,24 @@ public class FeedbackService : IFeedbackService
         var category = await _context.Categories.FindAsync(request.CategoryId)
             ?? throw new ArgumentException("Lĩnh vực phản ánh không hợp lệ.");
 
+        User? citizenUser = null;
+        if (citizenUserId.HasValue)
+        {
+            citizenUser = await _context.Users.FindAsync(citizenUserId.Value);
+        }
+
+        var citizenName = !string.IsNullOrWhiteSpace(request.CitizenName)
+            ? request.CitizenName.Trim()
+            : (citizenUser?.FullName ?? "Công dân");
+
+        var citizenPhone = !string.IsNullOrWhiteSpace(request.CitizenPhone)
+            ? request.CitizenPhone.Trim()
+            : (citizenUser?.PhoneNumber ?? string.Empty);
+
+        var citizenEmail = !string.IsNullOrWhiteSpace(request.CitizenEmail)
+            ? request.CitizenEmail.Trim()
+            : citizenUser?.Email;
+
         var today = DateTime.UtcNow.Date;
         var countToday = await _context.Feedbacks.CountAsync(f => f.CreatedAt.Date == today);
         var trackingCode = $"PA-{DateTime.UtcNow:yyyyMMdd}-{(countToday + 1):D4}";
@@ -51,9 +70,9 @@ public class FeedbackService : IFeedbackService
             Content = request.Content.Trim(),
             CategoryId = request.CategoryId,
             CitizenId = citizenUserId,
-            CitizenName = request.CitizenName.Trim(),
-            CitizenPhone = request.CitizenPhone.Trim(),
-            CitizenEmail = request.CitizenEmail?.Trim(),
+            CitizenName = citizenName,
+            CitizenPhone = citizenPhone,
+            CitizenEmail = citizenEmail,
             Address = request.Address.Trim(),
             Latitude = request.Latitude,
             Longitude = request.Longitude,
@@ -82,7 +101,7 @@ public class FeedbackService : IFeedbackService
 
         feedback.Logs.Add(new FeedbackLog
         {
-            ActorName = string.IsNullOrWhiteSpace(request.CitizenName) ? "Công dân" : request.CitizenName,
+            ActorName = string.IsNullOrWhiteSpace(citizenName) ? "Công dân" : citizenName,
             ActorRole = "Citizen",
             Action = "Submitted",
             Note = "Công dân gửi phản ánh lên hệ thống ReflectGov",
@@ -96,6 +115,22 @@ public class FeedbackService : IFeedbackService
             _ = _emailService.SendFeedbackSubmittedEmailAsync(feedback.CitizenEmail, feedback.CitizenName, feedback.TrackingCode, feedback.Title);
 
         return (await GetFeedbackByIdAsync(feedback.Id))!;
+    }
+
+    public async Task<List<FeedbackDetailDto>> GetCitizenFeedbacksAsync(Guid citizenUserId)
+    {
+        var feedbacks = await _context.Feedbacks
+            .Include(f => f.Category)
+            .Include(f => f.AssignedDepartment)
+            .Include(f => f.AssignedUser)
+            .Include(f => f.Attachments)
+            .Include(f => f.Logs.OrderBy(l => l.CreatedAt))
+            .Include(f => f.Rating)
+            .Where(f => f.CitizenId == citizenUserId)
+            .OrderByDescending(f => f.CreatedAt)
+            .ToListAsync();
+
+        return feedbacks.Select(MapToDetailDto).ToList();
     }
 
     public async Task<FeedbackDetailDto?> TrackByCodeAsync(string trackingCode)
@@ -135,8 +170,11 @@ public class FeedbackService : IFeedbackService
         return list.Select(MapToPublicDto).ToList();
     }
 
-    public async Task<FeedbackRatingDto> RateFeedbackAsync(Guid feedbackId, RateFeedbackRequest request)
+    public async Task<FeedbackRatingDto> RateFeedbackAsync(Guid feedbackId, RateFeedbackRequest request, Guid? actorUserId = null, string? actorRole = null)
     {
+        if (actorRole is "Admin" or "Dispatcher" or "Officer")
+            throw new UnauthorizedAccessException("Cán bộ công vụ không được phép tự đánh giá chất lượng hồ sơ. Quyền đánh giá thuộc về người dân phản ánh.");
+
         var feedback = await _context.Feedbacks
             .Include(f => f.Rating)
             .Include(f => f.Logs)
@@ -144,7 +182,34 @@ public class FeedbackService : IFeedbackService
             ?? throw new KeyNotFoundException("Không tìm thấy phản ánh.");
 
         if (feedback.Status != FeedbackStatus.Published && feedback.Status != FeedbackStatus.Closed)
-            throw new InvalidOperationException("Chỉ có thể đánh giá phản ánh đã hoàn thành.");
+            throw new InvalidOperationException("Chỉ có thể đánh giá phản ánh đã hoàn thành nghiệm thu.");
+
+        // 1. Hồ sơ thuộc về tài khoản công dân đã xác thực
+        if (feedback.CitizenId.HasValue)
+        {
+            if (!actorUserId.HasValue || actorUserId.Value != feedback.CitizenId.Value)
+            {
+                throw new UnauthorizedAccessException("Hồ sơ này được gửi bởi tài khoản công dân. Chỉ chính chủ tài khoản mới có quyền gửi và cập nhật đánh giá.");
+            }
+        }
+        // 2. Hồ sơ gửi bởi khách vãng lai (không có tài khoản)
+        else
+        {
+            if (feedback.Rating != null)
+            {
+                throw new InvalidOperationException("Phản ánh này đã được ghi nhận đánh giá trước đó và không thể chỉnh sửa.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(feedback.CitizenPhone))
+            {
+                var inputPhone = request.PhoneVerification?.Trim() ?? string.Empty;
+                var targetPhone = feedback.CitizenPhone.Trim();
+                if (string.IsNullOrWhiteSpace(inputPhone) || !string.Equals(inputPhone, targetPhone, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new UnauthorizedAccessException("Vui lòng nhập đúng số điện thoại của người gửi phản ánh để xác nhận chính chủ trước khi đánh giá.");
+                }
+            }
+        }
 
         if (feedback.Rating != null)
         {
@@ -479,6 +544,7 @@ public class FeedbackService : IFeedbackService
         Title = f.Title,
         Content = f.Content,
         CategoryId = f.CategoryId,
+        CitizenId = f.CitizenId,
         CategoryName = f.Category?.Name ?? string.Empty,
         CategoryIcon = f.Category?.Icon,
         CitizenName = f.CitizenName,

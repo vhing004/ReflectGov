@@ -48,6 +48,7 @@ export interface FeedbackDetail {
   title: string;
   content: string;
   categoryId: string;
+  citizenId?: string;
   categoryName?: string;
   categoryIcon?: string;
   citizenName: string;

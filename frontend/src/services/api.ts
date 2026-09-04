@@ -56,6 +56,10 @@ export const feedbackApi = {
     const res = await api.get<FeedbackDetail>(`/feedbacks/track/${encodeURIComponent(trackingCode)}`);
     return res.data;
   },
+  getMyFeedbacks: async (): Promise<FeedbackDetail[]> => {
+    const res = await api.get<FeedbackDetail[]>('/feedbacks/my-feedbacks');
+    return res.data;
+  },
   getPublicFeedbacks: async (params?: { categoryId?: string; search?: string }): Promise<FeedbackPublic[]> => {
     const res = await api.get<FeedbackPublic[]>('/feedbacks/public', { params });
     return res.data;
@@ -64,7 +68,10 @@ export const feedbackApi = {
     const res = await api.get<FeedbackDetail>(`/feedbacks/${id}`);
     return res.data;
   },
-  rateFeedback: async (id: string, rating: { score: number; comment?: string }): Promise<{ id: string; score: number; comment?: string }> => {
+  rateFeedback: async (
+    id: string,
+    rating: { score: number; comment?: string; phoneVerification?: string }
+  ): Promise<{ id: string; score: number; comment?: string }> => {
     const res = await api.post(`/feedbacks/${id}/rate`, rating);
     return res.data;
   },

@@ -11,14 +11,19 @@ import {
   Award,
   Sparkles,
   FileCheck,
+  FolderClock,
+  UserCheck,
 } from 'lucide-react';
 import { Category, FeedbackPublic } from '../../types';
 import { feedbackApi, masterDataApi } from '../../services/api';
 import { StatusBadge } from '../common/StatusBadge';
 import { StarRating } from '../common/StarRating';
+import { useAuth } from '../../context/AuthContext';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { user, isAdminOrStaff } = useAuth();
+  const isCitizen = user && !isAdminOrStaff;
   const [trackingCode, setTrackingCode] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [publicFeedbacks, setPublicFeedbacks] = useState<FeedbackPublic[]>([]);
@@ -128,12 +133,27 @@ export const HomePage: React.FC = () => {
 
           {/* Action CTAs */}
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+            {isCitizen && (
+              <Link
+                to="/my-feedbacks"
+                className="px-6 py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-sm sm:text-base shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+              >
+                <FolderClock className="w-5 h-5 text-gov-900" />
+                <span>Phản ánh của tôi</span>
+              </Link>
+            )}
+
             <Link
               to="/submit"
-              className="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm sm:text-base shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+              className={`px-6 py-3.5 rounded-xl font-extrabold text-sm sm:text-base shadow-lg hover:scale-105 transition-all flex items-center gap-2 ${
+                isCitizen
+                  ? 'bg-white text-gov-800 hover:bg-blue-50'
+                  : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+              }`}
             >
               <Send className="w-5 h-5" /> Gửi phản ánh hiện trường
             </Link>
+
             <Link
               to="/map"
               className="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm sm:text-base border border-white/30 backdrop-blur-sm transition-all flex items-center gap-2"
