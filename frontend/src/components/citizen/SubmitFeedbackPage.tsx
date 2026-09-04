@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import {
   Send,
   Upload,
@@ -16,6 +16,9 @@ import {
   Sparkles,
   Compass,
   ShieldAlert,
+  UserCheck,
+  ShieldCheck,
+  User,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -272,13 +275,19 @@ export const SubmitFeedbackPage: React.FC = () => {
       setErrorMsg('Vui lòng chọn lĩnh vực phản ánh.');
       return;
     }
-    if (!citizenName.trim()) {
-      setErrorMsg('Vui lòng nhập họ và tên người phản ánh.');
-      return;
-    }
-    if (!citizenPhone.trim()) {
-      setErrorMsg('Vui lòng nhập số điện thoại liên hệ để nhận thông báo.');
-      return;
+    const finalCitizenName = (user?.fullName || citizenName).trim();
+    const finalCitizenPhone = (user?.phoneNumber || citizenPhone).trim();
+    const finalCitizenEmail = (user?.email || citizenEmail).trim();
+
+    if (!user) {
+      if (!finalCitizenName) {
+        setErrorMsg('Vui lòng nhập họ và tên người phản ánh.');
+        return;
+      }
+      if (!finalCitizenPhone) {
+        setErrorMsg('Vui lòng nhập số điện thoại liên hệ để nhận thông báo.');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -289,9 +298,9 @@ export const SubmitFeedbackPage: React.FC = () => {
       formData.append('CategoryId', selectedCategoryId);
       formData.append('Title', title.trim());
       formData.append('Content', content.trim());
-      formData.append('CitizenName', citizenName.trim());
-      formData.append('CitizenPhone', citizenPhone.trim());
-      if (citizenEmail.trim()) formData.append('CitizenEmail', citizenEmail.trim());
+      formData.append('CitizenName', finalCitizenName);
+      formData.append('CitizenPhone', finalCitizenPhone);
+      if (finalCitizenEmail) formData.append('CitizenEmail', finalCitizenEmail);
       if (address.trim()) formData.append('Address', address.trim());
       formData.append('Latitude', coordinates[0].toString());
       formData.append('Longitude', coordinates[1].toString());
@@ -587,59 +596,129 @@ export const SubmitFeedbackPage: React.FC = () => {
 
         {/* 5. Thông tin người gửi */}
         <div className="space-y-4 pt-4 border-t border-slate-100">
-          <label className="block text-sm font-bold text-slate-900">
-            5. Thông tin người phản ánh <span className="text-rose-500">*</span>
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-bold text-slate-900 flex items-center gap-2">
+              <User className="w-4 h-4 text-gov-700" />
+              <span>5. Thông tin người phản ánh</span>
+              {!user && <span className="text-rose-500">*</span>}
+            </label>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Họ và tên <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Nguyễn Văn A"
-                value={citizenName}
-                onChange={(e) => setCitizenName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-gov-600"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Số điện thoại liên hệ <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="tel"
-                required
-                placeholder="0987654321"
-                value={citizenPhone}
-                onChange={(e) => setCitizenPhone(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-gov-600"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">
-                Email nhận kết quả (tùy chọn)
-              </label>
-              <input
-                type="email"
-                placeholder="nguyenvana@gmail.com"
-                value={citizenEmail}
-                onChange={(e) => setCitizenEmail(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-gov-600"
-              />
-            </div>
+            {user && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 font-bold">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                Tài khoản công dân đã xác thực
+              </span>
+            )}
           </div>
 
-          <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-gov-800 flex items-start gap-2">
-            <Info className="w-4 h-4 text-gov-600 shrink-0 mt-0.5" />
-            <span>
-              Thông tin cá nhân của công dân được bảo mật theo quy định pháp luật. Số điện thoại chỉ dùng để xác minh hoặc thông báo khi hoàn thành xử lý.
-            </span>
-          </div>
+          {user ? (
+            /* Logged in citizen: Auto-bound, no manual typing required */
+            <div className="bg-gradient-to-r from-blue-50/80 via-slate-50 to-emerald-50/50 p-5 rounded-2xl border border-blue-200 shadow-sm space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-blue-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gov-700 text-white flex items-center justify-center font-bold text-sm shadow">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 font-medium">Người gửi phản ánh:</p>
+                    <p className="text-sm font-extrabold text-slate-900">{user.fullName}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                  {user.phoneNumber && (
+                    <span className="bg-white px-2.5 py-1 rounded-lg border border-slate-200 font-semibold text-slate-800">
+                      📞 {user.phoneNumber}
+                    </span>
+                  )}
+                  {user.email && (
+                    <span className="bg-white px-2.5 py-1 rounded-lg border border-slate-200 font-semibold text-slate-800">
+                      ✉️ {user.email}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-xs text-gov-800 leading-relaxed font-medium flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  Thông tin người gửi được lấy tự động từ tài khoản của bạn. Phản ánh này sẽ tự động lưu vào mục{' '}
+                  <Link to="/my-feedbacks" className="underline font-bold text-gov-700 hover:text-gov-800">
+                    Phản ánh của tôi
+                  </Link>{' '}
+                  để bạn tiện theo dõi mọi lúc mà không cần ghi nhớ mã tra cứu.
+                </span>
+              </p>
+            </div>
+          ) : (
+            /* Guest mode: Manual inputs + suggestion to login */
+            <div className="space-y-4">
+              <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>
+                    Bạn đã có tài khoản công dân? Đăng nhập để không phải nhập lại thông tin và tự động lưu vào mục <strong>Phản ánh của tôi</strong>.
+                  </span>
+                </div>
+                <Link
+                  to="/login"
+                  className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 transition-colors"
+                >
+                  Đăng nhập
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Họ và tên <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nguyễn Văn A"
+                    value={citizenName}
+                    onChange={(e) => setCitizenName(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-gov-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Số điện thoại liên hệ <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="0987654321"
+                    value={citizenPhone}
+                    onChange={(e) => setCitizenPhone(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-gov-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Email nhận kết quả (tùy chọn)
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="nguyenvana@gmail.com"
+                    value={citizenEmail}
+                    onChange={(e) => setCitizenEmail(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-gov-600"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-xs text-gov-800 flex items-start gap-2">
+                <Info className="w-4 h-4 text-gov-600 shrink-0 mt-0.5" />
+                <span>
+                  Thông tin cá nhân của công dân được bảo mật theo quy định pháp luật. Số điện thoại chỉ dùng để xác minh hoặc thông báo khi hoàn thành xử lý.
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Submit button */}
